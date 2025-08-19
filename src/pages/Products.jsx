@@ -89,7 +89,7 @@ export default function Products() {
                       variant="body2"
                       sx={{ display: "flex", justifyContent: "space-between" }}
                     >
-                      ${product.price}{" "}
+                      ${product.price}
                       <span style={{ color: "gray" }}>{product.category}</span>
                     </Typography>
                   </CardContent>
