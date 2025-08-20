@@ -2,16 +2,27 @@ import axios from "axios";
 
 const API_URL = "http://localhost:5919/";
 
-export async function getProducts(category) {
+export async function getProducts(category, page = 1) {
   const response = await axios.get(
-    API_URL + "products" + (category === "all" ? "" : "?category=" + category)
+    API_URL +
+      "products?page=" +
+      page +
+      (category === "all" ? "" : "&category=" + category)
   );
+  // http://localhost:5919/products?page=1&category=Consoles
   return response.data;
 }
 
 export function getProduct() {}
 
-export function addProduct() {}
+export async function addProduct(name, description, price, category) {
+  const response = await axios.post(API_URL + "products", {
+    name,
+    description,
+    price,
+    category,
+  });
+}
 
 export function updateProduct() {}
 

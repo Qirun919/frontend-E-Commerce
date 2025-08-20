@@ -1,3 +1,4 @@
+import { Link } from "react-router";
 import { Button } from "@mui/material";
 import Header from "../components/Header";
 import Box from "@mui/material/Box";
@@ -18,13 +19,15 @@ import { getProducts } from "../utils/api_products";
 const Products = () => {
   // to store the data from /products
   const [products, setProducts] = useState([]);
+  // to track which page the user is in
+  const [page, setPage] = useState(1);
   const [category, setCategory] = useState("all");
 
   useEffect(() => {
-    getProducts(category).then((data) => {
+    getProducts(category, page).then((data) => {
       setProducts(data);
     });
-  }, [category]);
+  }, [category, page]);
 
   return (
     <>
@@ -39,7 +42,12 @@ const Products = () => {
           >
             Products
           </Typography>
-          <Button variant="contained" color="success">
+          <Button
+            component={Link}
+            to="/products/new"
+            variant="contained"
+            color="success"
+          >
             Add New
           </Button>
         </Box>
@@ -59,8 +67,12 @@ const Products = () => {
               labelId="demo-simple-select-label"
               id="demo-simple-select"
               value={category}
-              label="Genre"
-              onChange={(event) => setCategory(event.target.value)}
+              label="Category"
+              onChange={(event) => {
+                setCategory(event.target.value);
+                // reset the page back to 1
+                setPage(1);
+              }}
             >
               <MenuItem value="all">All</MenuItem>
               <MenuItem value={"Consoles"}>Consoles</MenuItem>
@@ -85,7 +97,7 @@ const Products = () => {
                       pt: 2,
                     }}
                   >
-                    <Chip label={product.price} color="success" />
+                    <Chip label={`$${product.price}`} color="success" />
                     <Chip label={product.category} color="primary" />
                   </Box>
                 </CardContent>
@@ -113,6 +125,36 @@ const Products = () => {
             </Grid>
           ))}
         </Grid>
+        {products.length === 0 ? (
+          <Typography variant="h5" align="center" py={3}>
+            No more products found.
+          </Typography>
+        ) : null}
+        <Box
+          sx={{
+            pt: 2,
+            pb: 2,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <Button
+            variant="contained"
+            disabled={page === 1 ? true : false} // the button will be disabled if the page is 1
+            onClick={() => setPage(page - 1)}
+          >
+            Previous
+          </Button>
+          <span>Page: {page}</span>
+          <Button
+            variant="contained"
+            disabled={products.length === 0 ? true : false} // the button will be disabled if no more products
+            onClick={() => setPage(page + 1)}
+          >
+            Next
+          </Button>
+        </Box>
       </Container>
     </>
   );
