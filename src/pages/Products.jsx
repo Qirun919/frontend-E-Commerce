@@ -13,12 +13,17 @@ import Card from "@mui/material/Card";
 import CardActions from "@mui/material/CardActions";
 import CardContent from "@mui/material/CardContent";
 import Chip from "@mui/material/Chip";
+import { toast } from "sonner";
 import { useState, useEffect } from "react";
-import { getProducts } from "../utils/api_products";
+import { getProducts, deleteProduct } from "../utils/api_products";
+import { AddToCart } from "../utils/cart";
+import Swal from "sweetalert2";
+import { useNavigate } from "react-router";
 
 const Products = () => {
   // to store the data from /products
   const [products, setProducts] = useState([]);
+  const navigate = useNavigate();
   // to track which page the user is in
   const [page, setPage] = useState(1);
   const [category, setCategory] = useState("all");
@@ -28,6 +33,37 @@ const Products = () => {
       setProducts(data);
     });
   }, [category, page]);
+
+  // add to Cart
+  const handleAddToCart = async (product) => {
+    try {
+      const updateCart = AddToCart(product); // call the JS function
+      toast.success("Product Added To Cart");
+      navigate("/cart");
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to add product");
+    }
+  };
+
+  const handleProductDelete = async (id) => {
+    Swal.fire({
+      title: "Are you sure?",
+      text: "You won't be able to revert this!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, delete it!",
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        await deleteProduct(id);
+        //delete product from the state
+        setProducts(products.filter((p) => p._id !== id));
+        toast.success("Product has been deleted");
+      }
+    });
+  };
 
   return (
     <>
@@ -97,12 +133,17 @@ const Products = () => {
                       pt: 2,
                     }}
                   >
-                    <Chip label={`$${product.price}`} color="success" />
+                    <Chip label={"$" + product.price} color="success" />
                     <Chip label={product.category} color="primary" />
                   </Box>
                 </CardContent>
                 <CardActions sx={{ display: "block", px: 3, pb: 3 }}>
-                  <Button variant="contained" color="primary" fullWidth>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={() => handleAddToCart(product)}
+                    fullWidth
+                  >
                     Add To Cart
                   </Button>
                   <Box
@@ -113,10 +154,21 @@ const Products = () => {
                       marginLeft: "0px !important",
                     }}
                   >
-                    <Button variant="contained" color="info">
+                    <Button
+                      component={Link}
+                      to={`/products/${product._id}/edit`}
+                      variant="contained"
+                      color="info"
+                    >
                       Edit
                     </Button>
-                    <Button variant="contained" color="error">
+                    <Button
+                      variant="contained"
+                      color="error"
+                      onClick={() => {
+                        handleProductDelete(product._id);
+                      }}
+                    >
                       Delete
                     </Button>
                   </Box>
