@@ -1,40 +1,47 @@
-import Box from "@mui/material/Box";
-import Typography from "@mui/material/Typography";
-import Divider from "@mui/material/Divider";
-import Button from "@mui/material/Button";
 import { Link } from "react-router";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import Typography from "@mui/material/Typography";
 
-const Header = () => {
+const Header = (props) => {
+  const { current, title = "Welcome To My Store" } = props;
   return (
-    <>
-      <Box
+    <Box
+      sx={{
+        py: 4,
+        textAlign: "center",
+        borderBottom: "1px solid #ddd",
+        mb: 3,
+      }}
+    >
+      <Typography
+        variant="h3"
         sx={{
-          py: 4,
-          textAlign: "center",
-          borderBottom: "1px solid #ddd",
-          mb: 3,
+          fontWeight: "700",
         }}
       >
-        <Typography variant="h3">Welcome to my shop</Typography>
+        {title}
+      </Typography>
+      <Box
+        sx={{ display: "flex", gap: "10px", justifyContent: "center", mt: 2 }}
+      >
         <Button
           component={Link}
-          to={`/`}
-          variant="contained"
-          color="primary"
-          sx={{ mr: 2 }}
+          to="/"
+          variant={current === "home" ? "contained" : "outlined"}
         >
           Home
         </Button>
         <Button
           component={Link}
-          to={`/cart`}
-          variant="contained"
-          color="primary"
+          to="/cart"
+          variant={current === "cart" ? "contained" : "outlined"}
         >
           Cart
         </Button>
       </Box>
-    </>
+    </Box>
   );
 };
+
 export default Header;

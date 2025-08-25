@@ -13,17 +13,15 @@ import Card from "@mui/material/Card";
 import CardActions from "@mui/material/CardActions";
 import CardContent from "@mui/material/CardContent";
 import Chip from "@mui/material/Chip";
-import { toast } from "sonner";
 import { useState, useEffect } from "react";
 import { getProducts, deleteProduct } from "../utils/api_products";
-import { AddToCart } from "../utils/cart";
 import Swal from "sweetalert2";
-import { useNavigate } from "react-router";
+import { toast } from "sonner";
+import { addToCart } from "../utils/cart";
 
 const Products = () => {
   // to store the data from /products
   const [products, setProducts] = useState([]);
-  const navigate = useNavigate();
   // to track which page the user is in
   const [page, setPage] = useState(1);
   const [category, setCategory] = useState("all");
@@ -34,21 +32,9 @@ const Products = () => {
     });
   }, [category, page]);
 
-  // add to Cart
-  const handleAddToCart = async (product) => {
-    try {
-      const updateCart = AddToCart(product); // call the JS function
-      toast.success("Product Added To Cart");
-      navigate("/cart");
-    } catch (error) {
-      console.error(error);
-      toast.error("Failed to add product");
-    }
-  };
-
   const handleProductDelete = async (id) => {
     Swal.fire({
-      title: "Are you sure?",
+      title: "Are you sure you want to delete this product?",
       text: "You won't be able to revert this!",
       icon: "warning",
       showCancelButton: true,
@@ -56,10 +42,19 @@ const Products = () => {
       cancelButtonColor: "#d33",
       confirmButtonText: "Yes, delete it!",
     }).then(async (result) => {
+      // once user confirm, then we delete the product
       if (result.isConfirmed) {
+        // delete product at the backend
         await deleteProduct(id);
-        //delete product from the state
-        setProducts(products.filter((p) => p._id !== id));
+
+        // method #1: remove from the state manually
+        // delete product from the state
+        // setProducts(products.filter((p) => p._id !== id));
+
+        // method #2: get the new data from the backend
+        const updatedProducts = await getProducts(category, page);
+        setProducts(updatedProducts);
+
         toast.success("Product has been deleted");
       }
     });
@@ -67,7 +62,7 @@ const Products = () => {
 
   return (
     <>
-      <Header />
+      <Header current="home" />
       <Container>
         <Box sx={{ display: "flex", justifyContent: "space-between", mb: 3 }}>
           <Typography
@@ -103,7 +98,7 @@ const Products = () => {
               labelId="demo-simple-select-label"
               id="demo-simple-select"
               value={category}
-              label="Category"
+              label="Genre"
               onChange={(event) => {
                 setCategory(event.target.value);
                 // reset the page back to 1
@@ -141,8 +136,8 @@ const Products = () => {
                   <Button
                     variant="contained"
                     color="primary"
-                    onClick={() => handleAddToCart(product)}
                     fullWidth
+                    onClick={() => addToCart(product)}
                   >
                     Add To Cart
                   </Button>
