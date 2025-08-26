@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = "http://localhost:5919/";
+import { API_URL } from "./constants";
 
 // show all products
 export async function getProducts(category, page = 1) {

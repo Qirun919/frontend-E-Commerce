@@ -9,6 +9,7 @@ import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Paper from "@mui/material/Paper";
 import Button from "@mui/material/Button";
+import { Link } from "react-router";
 import { useState, useEffect } from "react";
 import { getCart, updateCart } from "../utils/cart";
 
@@ -91,7 +92,14 @@ const CartPage = () => {
           </Table>
         </TableContainer>
         <Box sx={{ pt: 3, display: "flex", justifyContent: "flex-end" }}>
-          <Button variant="contained" color="primary">
+          <Button
+            component={Link}
+            to="/checkout"
+            variant="contained"
+            color="primary"
+            // disable the checkout page if no item found in cart
+            disabled={cart.length === 0 ? true : false}
+          >
             Checkout
           </Button>
         </Box>
