@@ -21,22 +21,32 @@ export async function getProduct(id) {
 }
 
 // create product
-export async function addProduct(name, description, price, category) {
+export async function addProduct(name, description, price, category, image) {
   const response = await axios.post(API_URL + "products", {
     name,
     description,
     price,
     category,
+    image,
   });
+  return response.data;
 }
 
 // update product with id
-export async function updateProduct(id, name, description, price, category) {
+export async function updateProduct(
+  id,
+  name,
+  description,
+  price,
+  category,
+  image
+) {
   const response = await axios.put(API_URL + "products/" + id, {
     name: name,
     description: description,
     price: price,
     category,
+    image,
   });
   return response.data;
 }

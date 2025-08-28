@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import Header from "../components/Header";
+import Container from "@mui/material/Container";
 import Box from "@mui/material/Box";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
@@ -9,18 +10,19 @@ import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Paper from "@mui/material/Paper";
 import Button from "@mui/material/Button";
-import FormControl from "@mui/material/FormControl";
-import Select from "@mui/material/Select";
 import InputLabel from "@mui/material/InputLabel";
 import MenuItem from "@mui/material/MenuItem";
-import Swal from "sweetalert2";
+import FormControl from "@mui/material/FormControl";
+import Select from "@mui/material/Select";
+import { getOrders, updateOrder, deleteOrder } from "../utils/api_orders";
 import { toast } from "sonner";
-import { Container } from "@mui/material";
-import { getOrders } from "../utils/api_orders";
+import Swal from "sweetalert2";
+import CircularProgress from "@mui/material/CircularProgress";
 
 const OrdersPage = () => {
   // store orders data from API
   const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   // call the API
   useEffect(() => {
@@ -32,23 +34,20 @@ const OrdersPage = () => {
       .catch((error) => {
         console.log(error);
       });
-  }, []); // call on;y once when the page load
+  }, []); // call only once when the page load
 
-  console.log(orders);
-
-  // change status
-  const handleChangeStatus = (orderId, newStatus) => {
-    setOrders((prev) =>
-      prev.map((order) =>
-        order._id === orderId ? { ...order, status: newStatus } : order
-      )
-    );
+  const handleStatusUpdate = async (id, newStatus) => {
+    setLoading(true);
+    await updateOrder(id, newStatus);
+    const updatedOrders = await getOrders();
+    setOrders(updatedOrders);
+    toast.info("Status has been updated");
+    setLoading(false);
   };
 
-  // remove order (pending)
-  const handleRemoveOrder = (orderId) => {
+  const handleOrderDelete = async (id) => {
     Swal.fire({
-      title: "Are you sure you want to delete this product?",
+      title: "Are you sure you want to delete this order?",
       text: "You won't be able to revert this!",
       icon: "warning",
       showCancelButton: true,
@@ -56,9 +55,16 @@ const OrdersPage = () => {
       cancelButtonColor: "#d33",
       confirmButtonText: "Yes, delete it!",
     }).then(async (result) => {
-      setOrders((prev) => prev.filter((order) => order._id !== orderId));
-
-      toast.success("order has been deleted");
+      // once user confirm, then we delete the product
+      if (result.isConfirmed) {
+        await deleteOrder(id);
+        // method #1: get new orders data
+        const updatedOrders = await getOrders();
+        setOrders(updatedOrders);
+        // method #2:
+        // setOrders(orders.filter((i) => i._id !== id));
+        toast.info("Order has been deleted");
+      }
     });
   };
 
@@ -71,75 +77,73 @@ const OrdersPage = () => {
             <TableHead>
               <TableRow>
                 <TableCell>Customer</TableCell>
-                <TableCell align="right">Products</TableCell>
-                <TableCell align="right">Total Amount</TableCell>
-                <TableCell align="right">Status</TableCell>
-                <TableCell align="right">Payment Date</TableCell>
-                <TableCell align="right">Actions</TableCell>
+                <TableCell>Products</TableCell>
+                <TableCell>Total Price</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell>Payment Date</TableCell>
+                <TableCell align="right">Action</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {orders.length > 0 ? (
-                orders.map((orders) => (
+                orders.map((order) => (
                   <TableRow
-                    key={orders._id}
+                    key={order._id}
                     sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
                   >
                     <TableCell component="th" scope="row">
-                      {orders.customerName}
-                      <div>{orders.customerEmail}</div>
+                      {order.customerName}
+                      <div>({order.customerEmail})</div>
                     </TableCell>
-                    <TableCell align="right">
-                      {orders.products.map((p) => (
-                        <div key={p.id}>{p.name}</div>
+                    <TableCell>
+                      {order.products.map((product) => (
+                        <div>{product.name}</div>
                       ))}
                     </TableCell>
-                    <TableCell align="right">{orders.totalPrice}</TableCell>
-                    <TableCell align="right">
-                      <FormControl
-                        fullWidth
-                        disabled={orders.status === "pending"}
-                      >
-                        <InputLabel id="demo-simple-select-label">
-                          {orders.status}
-                        </InputLabel>
-                        <Select
-                          labelId="demo-simple-select-label"
-                          id="demo-simple-select"
-                          label={orders.status}
-                          onChange={(e) =>
-                            handleChangeStatus(orders._id, e.target.value)
-                          }
-                        >
-                          <MenuItem value={"paid"}>paid</MenuItem>
-                          <MenuItem value={"failed"}>failed</MenuItem>
-                          <MenuItem value={"completed"}>completed</MenuItem>
-                        </Select>
-                      </FormControl>
+                    <TableCell>${order.totalPrice.toFixed(2)}</TableCell>
+                    <TableCell>
+                      {loading ? (
+                        <CircularProgress color="inherit" />
+                      ) : (
+                        <FormControl fullWidth>
+                          <InputLabel>Status</InputLabel>
+                          <Select
+                            value={order.status}
+                            label="Status"
+                            disabled={order.status === "pending"}
+                            onChange={(event) => {
+                              handleStatusUpdate(order._id, event.target.value);
+                            }}
+                          >
+                            <MenuItem value={"pending"} disabled>
+                              Pending
+                            </MenuItem>
+                            <MenuItem value={"paid"}>Paid</MenuItem>
+                            <MenuItem value={"failed"}>Failed</MenuItem>
+                            <MenuItem value={"completed"}>Completed</MenuItem>
+                          </Select>
+                        </FormControl>
+                      )}
                     </TableCell>
-
+                    <TableCell>{order.paid_at}</TableCell>
                     <TableCell align="right">
-                      {(orders.status === "paid" ||
-                        orders.status === "completed") &&
-                        orders.paid_at}
-                    </TableCell>
-
-                    <TableCell align="right">
-                      {orders.status === "pending" && (
+                      {order.status === "pending" ? (
                         <Button
                           variant="contained"
                           color="error"
-                          onClick={() => handleRemoveOrder(orders._id)}
+                          onClick={() => {
+                            handleOrderDelete(order._id);
+                          }}
                         >
                           Delete
                         </Button>
-                      )}
+                      ) : null}
                     </TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={5}>No order yet</TableCell>
+                  <TableCell colSpan={5}>No order found.</TableCell>
                 </TableRow>
               )}
             </TableBody>

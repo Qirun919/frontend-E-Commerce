@@ -20,23 +20,19 @@ export const createOrder = async (
     totalPrice,
   });
 
-  const handleChangeStatus = async (newStatus) => {
-    try {
-      const res = await fetch(`http://localhost:5000/orders/${orders.id}`, {
-        method: "PUT", // or PATCH depending on your backend
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ status: newStatus }),
-      });
 
-      if (!res.ok) throw new Error("Failed to update");
 
-      // Update local UI
-      setOrders((prev) => ({ ...prev, status: newStatus }));
-    } catch (err) {
-      console.error(err);
-    }
-  };
   return response.data;
 };
+
+  export const updateOrder = async (id, status) => {
+    const response = await axios.put(API_URL + "orders/" + id, {
+      status,
+    });
+    return response.data;
+  };
+
+  export const deleteOrder = async (id) => {
+    const response = await axios.delete(API_URL + "orders/" + id);
+    return response.data;
+  };
