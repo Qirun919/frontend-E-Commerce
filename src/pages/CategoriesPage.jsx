@@ -1,8 +1,7 @@
-import Header from "../components/Header";
 import { useState, useEffect } from "react";
-import { toast } from "sonner";
+import Header from "../components/Header";
+import Container from "@mui/material/Container";
 import {
-  Container,
   Box,
   Typography,
   Paper,
@@ -17,73 +16,59 @@ import { Edit, Delete } from "@mui/icons-material";
 import IconButton from "@mui/material/IconButton";
 import {
   getCategories,
-  createCategory,
+  addNewCategory,
   updateCategory,
   deleteCategory,
 } from "../utils/api_categories";
+import { toast } from "sonner";
 import Swal from "sweetalert2";
+import Modal from "@mui/material/Modal";
 
 const CategoriesPage = () => {
-  // store orders data from API
   const [categories, setCategories] = useState([]);
-  const [label, setLabel] = useState([]);
+  const [label, setLabel] = useState("");
+  const [open, setOpen] = useState(false);
+  const [selectedCatID, setSelectedCatID] = useState("");
+  const [selectedCatLabel, setSelectedCatLabel] = useState("");
 
-  // call the API
   useEffect(() => {
-    getCategories()
-      .then((data) => {
-        // putting the data into orders state
-        setCategories(data);
-      })
-      .catch((error) => {
-        console.log(error);
-      });
-  }, []); // call only once when the page load
+    getCategories().then((data) => setCategories(data));
+  }, []);
 
-  //add new category
-  const handleAddNew = async (event) => {
-    // 1. check for error
-    if (!label) {
-      toast.error("Please fill up the required fields");
-    }
-
-    try {
-      // 2. trigger the API to create new product
-      await createCategory(label);
-
-      // 3. if successful, redirect user back to home page and show success message
-      toast.success("New Category has been added");
-    } catch (error) {
-      toast.error(error.message);
+  const handleAddNew = async () => {
+    if (label === "") {
+      toast.error("Please fill up the label");
+    } else {
+      // add new category
+      await addNewCategory(label);
+      // get the latest categories again
+      const newCategories = await getCategories();
+      // update the categories state
+      setCategories(newCategories);
+      // clear the label
+      setLabel("");
+      toast.info("New category has been added");
     }
   };
 
-  // edit category
-  const handleLabelUpdate = (category) => {
-    // 5a. prompt the user to update the new label for the selected category (pass in the current value)
-    const updateCategory = prompt(
-      "Please enter the new label for the selected category.",
-      category.label
-    );
-    // 5b. update the categories with the update category label
-    if (updateCategory) {
-      const updatedCategories = [...categories];
-      setCategories(
-        updatedCategories.map((cat) => {
-          if (cat._id === category._id) {
-            cat.label = updateCategory;
-          }
-          return cat;
-        })
-      );
-      // show notification of success message
-      toast("Category has been updated");
-      // 5c. update the local storage with the updated categories
-    }
+  const handleUpdate = async () => {
+    // prompt the user to update the new label for the selected category (pass in the current value)
+    // const newCategoryLabel = prompt(
+    //   "Please enter the new label for the selected category.",
+    //   category.label
+    // );
+    // update category
+    await updateCategory(selectedCatID, selectedCatLabel);
+    // get the latest categories again
+    const newCategories = await getCategories();
+    // update the categories state
+    setCategories(newCategories);
+    // close the model
+    setOpen(false);
+    toast.info("Category has been updated");
   };
 
-  // delete category
-  const handleCategoryDelete = async (id) => {
+  const handleDelete = async (category) => {
     Swal.fire({
       title: "Are you sure you want to delete this category?",
       text: "You won't be able to revert this!",
@@ -95,12 +80,11 @@ const CategoriesPage = () => {
     }).then(async (result) => {
       // once user confirm, then we delete the product
       if (result.isConfirmed) {
-        await deleteCategory(id);
-        // method #1: get new orders data
-        const updatedCategories = await getCategories();
-        setCategories(updatedCategories);
-        // method #2:
-        // setCategories(orders.filter((i) => i._id !== id));
+        await deleteCategory(category._id);
+        // get the latest categories again
+        const newCategories = await getCategories();
+        // update the categories state
+        setCategories(newCategories);
         toast.info("Category has been deleted");
       }
     });
@@ -109,7 +93,7 @@ const CategoriesPage = () => {
   return (
     <>
       <Header current="categories" title="Manage Categories" />
-      <Container sx={{ py: 6 }}>
+      <Container maxWidth="lg">
         <Typography variant="h4">Manage Categories</Typography>
         <Paper
           elevation={3}
@@ -155,14 +139,17 @@ const CategoriesPage = () => {
                 divider
                 secondaryAction={
                   <Box sx={{ display: "flex", gap: "10px" }}>
-                    <IconButton onClick={() => handleLabelUpdate(category)}>
-                      <Edit />
-                    </IconButton>
                     <IconButton
                       onClick={() => {
-                        handleCategoryDelete(category._id);
+                        setOpen(true);
+                        // pass in the id and label
+                        setSelectedCatID(category._id);
+                        setSelectedCatLabel(category.label);
                       }}
                     >
+                      <Edit />
+                    </IconButton>
+                    <IconButton onClick={() => handleDelete(category)}>
                       <Delete />
                     </IconButton>
                   </Box>
@@ -173,6 +160,56 @@ const CategoriesPage = () => {
             ))}
           </List>
         </Paper>
+
+        <Modal open={open} onClose={() => setOpen(false)}>
+          <Box
+            sx={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              width: 400,
+              bgcolor: "background.paper",
+              border: "2px solid #000",
+              boxShadow: 24,
+              p: 4,
+            }}
+          >
+            <TextField
+              fullWidth
+              label="Category"
+              variant="outlined"
+              value={selectedCatLabel}
+              onChange={(event) => setSelectedCatLabel(event.target.value)}
+            />
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "flex-end",
+                gap: "10px",
+                pt: 2,
+              }}
+            >
+              {" "}
+              <Button
+                color="primary"
+                variant="outlined"
+                onClick={() => {
+                  setOpen(false);
+                }}
+              >
+                Close
+              </Button>
+              <Button
+                color="primary"
+                variant="contained"
+                onClick={handleUpdate}
+              >
+                Update
+              </Button>
+            </Box>
+          </Box>
+        </Modal>
       </Container>
     </>
   );

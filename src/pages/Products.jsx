@@ -10,15 +10,16 @@ import FormControl from "@mui/material/FormControl";
 import Select from "@mui/material/Select";
 import Grid from "@mui/material/Grid";
 import Card from "@mui/material/Card";
+import CardMedia from "@mui/material/CardMedia";
 import CardActions from "@mui/material/CardActions";
 import CardContent from "@mui/material/CardContent";
-import CardMedia from "@mui/material/CardMedia";
 import Chip from "@mui/material/Chip";
 import { useState, useEffect } from "react";
 import { getProducts, deleteProduct } from "../utils/api_products";
 import Swal from "sweetalert2";
 import { toast } from "sonner";
 import { addToCart } from "../utils/cart";
+import { getCategories } from "../utils/api_categories";
 import { API_URL } from "../utils/constants";
 
 const Products = () => {
@@ -27,12 +28,17 @@ const Products = () => {
   // to track which page the user is in
   const [page, setPage] = useState(1);
   const [category, setCategory] = useState("all");
+  const [categories, setCategories] = useState([]);
 
   useEffect(() => {
     getProducts(category, page).then((data) => {
       setProducts(data);
     });
   }, [category, page]);
+
+  useEffect(() => {
+    getCategories().then((data) => setCategories(data));
+  }, []);
 
   const handleProductDelete = async (id) => {
     Swal.fire({
@@ -108,10 +114,9 @@ const Products = () => {
               }}
             >
               <MenuItem value="all">All</MenuItem>
-              <MenuItem value={"Consoles"}>Consoles</MenuItem>
-              <MenuItem value={"Games"}>Games</MenuItem>
-              <MenuItem value={"Accessories"}>Accessories</MenuItem>
-              <MenuItem value={"Subscriptions"}>Subscriptions</MenuItem>
+              {categories.map((cat) => (
+                <MenuItem value={cat._id}>{cat.label}</MenuItem>
+              ))}
             </Select>
           </FormControl>
         </Box>
@@ -141,7 +146,10 @@ const Products = () => {
                     }}
                   >
                     <Chip label={"$" + product.price} color="success" />
-                    <Chip label={product.category} color="primary" />
+                    <Chip
+                      label={product.category ? product.category.label : ""}
+                      color="primary"
+                    />
                   </Box>
                 </CardContent>
                 <CardActions sx={{ display: "block", px: 3, pb: 3 }}>

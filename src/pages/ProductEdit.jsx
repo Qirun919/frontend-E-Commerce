@@ -14,9 +14,10 @@ import { toast } from "sonner";
 import { useNavigate, useParams, Link } from "react-router";
 import { styled } from "@mui/material/styles";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
+import Chip from "@mui/material/Chip";
 import { uploadImage } from "../utils/api_image";
 import { API_URL } from "../utils/constants";
-import Products from "./Products";
+import { getCategories } from "../utils/api_categories";
 
 const VisuallyHiddenInput = styled("input")({
   clip: "rect(0 0 0 0)",
@@ -39,6 +40,7 @@ const ProductEdit = () => {
   const [category, setCategory] = useState("");
   const [error, setError] = useState(null);
   const [image, setImage] = useState(null);
+  const [categories, setCategories] = useState([]);
 
   // load the product data from the backend API, and assign it the state
   useEffect(() => {
@@ -51,7 +53,7 @@ const ProductEdit = () => {
           setDescription(productData ? productData.description : "");
           setPrice(productData ? productData.price : 0);
           setCategory(productData ? productData.category : "");
-          setImage(productData ? productData.category : "null");
+          setImage(productData ? productData.image : null);
         } else {
           // if not available, set error message
           setError("Product not found");
@@ -62,6 +64,10 @@ const ProductEdit = () => {
         setError("Product not found");
       });
   }, [id]);
+
+  useEffect(() => {
+    getCategories().then((data) => setCategories(data));
+  }, []);
 
   const handleFormSubmit = async (event) => {
     // 1. check for error
@@ -147,14 +153,11 @@ const ProductEdit = () => {
               label="Genre"
               onChange={(event) => {
                 setCategory(event.target.value);
-                // reset the page back to 1
-                setPage(1);
               }}
             >
-              <MenuItem value={"Consoles"}>Consoles</MenuItem>
-              <MenuItem value={"Games"}>Games</MenuItem>
-              <MenuItem value={"Accessories"}>Accessories</MenuItem>
-              <MenuItem value={"Subscriptions"}>Subscriptions</MenuItem>
+              {categories.map((cat) => (
+                <MenuItem value={cat._id}>{cat.label}</MenuItem>
+              ))}
             </Select>
           </FormControl>
         </Box>
